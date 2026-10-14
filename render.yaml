@@ -1,0 +1,53 @@
+# Render Blueprint: one free Docker web service for the API.
+# Migrations and role grants are run from a workstation with MIGRATION_DATABASE_URL (see README);
+# the service itself never holds the owner credentials.
+services:
+  - type: web
+    name: ursache-api
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /health
+    autoDeploy: true
+    buildFilter:
+      paths:
+        - backend/**
+    envVars:
+      - key: ENVIRONMENT
+        value: prod
+      - key: LOG_LEVEL
+        value: INFO
+      - key: QDRANT_CLOUD_INFERENCE
+        value: "true"
+      - key: BLOB_BACKEND
+        value: s3
+      - key: APP_DATABASE_URL
+        sync: false
+      - key: AGENT_DATABASE_URL
+        sync: false
+      - key: QDRANT_URL
+        sync: false
+      - key: QDRANT_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: COHERE_API_KEY
+        sync: false
+      - key: S3_ENDPOINT_URL
+        sync: false
+      - key: S3_BUCKET
+        sync: false
+      - key: S3_KEY_ID
+        sync: false
+      - key: S3_SECRET
+        sync: false
+      - key: S3_PUBLIC_BASE_URL
+        sync: false
+      - key: LANGFUSE_PUBLIC_KEY
+        sync: false
+      - key: LANGFUSE_SECRET_KEY
+        sync: false
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false

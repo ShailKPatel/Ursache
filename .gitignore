@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Node
+node_modules/
+.npm/
+.pnpm-store/
+.eslintcache
+
+# Build output
+dist/
+build/
+.next/
+.cache/
+.parcel-cache/
+*.tsbuildinfo
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+logs/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+*.swp
+
+# Next.js
+next-env.d.ts
+
+# Project data (generated or downloaded; never committed)
+data/blobs/
+data/raw/
+data/generated/*
+!data/generated/.gitkeep

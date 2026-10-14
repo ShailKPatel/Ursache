@@ -1,0 +1,42 @@
+name: ursache
+
+services:
+  postgres:
+    image: postgres:18.6
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ursache
+      # Dev-only role passwords; must match the *_DATABASE_URL values in .env
+      URSACHE_APP_PASSWORD: ursache_app
+      URSACHE_AGENT_PASSWORD: ursache_agent
+      URSACHE_EVAL_PASSWORD: ursache_eval
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql
+      - ./backend/src/ursache/migrations/roles.sql:/ursache/roles.sql:ro,z
+      - ./infra/postgres/initdb.d:/docker-entrypoint-initdb.d:ro,z
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ursache"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  qdrant:
+    image: qdrant/qdrant:v1.19.2
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant-data:/qdrant/storage
+    healthcheck:
+      # The image ships without curl/wget; probe the HTTP port with bash's /dev/tcp.
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/6333 && printf \"GET /readyz HTTP/1.0\\r\\n\\r\\n\" >&3 && grep -q \"200 OK\" <&3'"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  postgres-data:
+  qdrant-data:

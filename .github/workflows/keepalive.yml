@@ -1,0 +1,36 @@
+# Qdrant Cloud suspends free clusters after a week without use. One cheap read per week
+# against Qdrant and Neon keeps the demo alive. Each step is skipped if its secrets are absent.
+name: Keep-alive
+
+on:
+  schedule:
+    - cron: "23 7 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      QDRANT_URL: ${{ secrets.QDRANT_URL }}
+      QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
+      # libpq URL for the read-only role, e.g. postgresql://ursache_agent:...@...neon.tech/ursache?sslmode=require
+      NEON_READONLY_URL: ${{ secrets.NEON_READONLY_URL }}
+    steps:
+      - name: Qdrant point count
+        if: env.QDRANT_URL != '' && env.QDRANT_API_KEY != ''
+        run: |
+          curl -fsS -X POST "${QDRANT_URL%/}/collections/doc_chunks/points/count" \
+            -H "api-key: ${QDRANT_API_KEY}" -H "content-type: application/json" \
+            -d '{"exact": false}'
+
+      - name: Neon read query
+        if: env.NEON_READONLY_URL != ''
+        run: psql "$NEON_READONLY_URL" -v ON_ERROR_STOP=1 -tAc "SELECT count(*) FROM plant.lines"
+
+      - name: Report skipped checks
+        if: env.QDRANT_URL == '' || env.QDRANT_API_KEY == '' || env.NEON_READONLY_URL == ''
+        run: echo "::notice::Some keep-alive secrets are not set; those pings were skipped."

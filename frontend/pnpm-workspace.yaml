@@ -1,0 +1,19 @@
+# Prebuilt platform binaries come from optional dependencies; postinstall fallbacks are not needed.
+allowBuilds:
+  unrs-resolver: false
+
+# pnpm holds back releases younger than a day. Exempt only security patches we need now:
+# next 16.4.1 fixes GHSA-673q-mjm6-r5xr and GHSA-2464-fhr4-w9xw (critical RCE).
+minimumReleaseAgeExclude:
+  - next@16.4.1
+  - "@next/env@16.4.1"
+  - "@next/swc-linux-x64-gnu@16.4.1"
+  - "@next/swc-linux-x64-musl@16.4.1"
+  - "@next/swc-linux-arm64-gnu@16.4.1"
+  - "@next/swc-linux-arm64-musl@16.4.1"
+  - "@next/swc-darwin-x64@16.4.1"
+  - "@next/swc-darwin-arm64@16.4.1"
+  - "@next/swc-win32-x64-msvc@16.4.1"
+  - "@next/swc-win32-arm64-msvc@16.4.1"
+  - react@19.3.1
+  - react-dom@19.3.1
