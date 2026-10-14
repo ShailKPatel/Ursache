@@ -3,7 +3,10 @@ SHELL := /bin/bash
 BACKEND := cd backend &&
 FRONTEND := cd frontend &&
 
-.PHONY: help up down migrate roles seed bootstrap api web install lint format typecheck test test-integration
+SEED ?= 42
+DAYS ?= 90
+
+.PHONY: help up down migrate roles seed bootstrap simulate api web install lint format typecheck test test-integration
 
 help: ## List targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-17s %s\n", $$1, $$2}'
@@ -29,6 +32,9 @@ seed: ## Insert seed users
 
 bootstrap: ## Create Qdrant collections and aliases
 	$(BACKEND) uv run ursache qdrant-bootstrap
+
+simulate: ## Generate plant data, documents and ground truth (SEED, DAYS; RESET=1 clears first)
+	$(BACKEND) uv run ursache simulate --seed $(SEED) --days $(DAYS) $(if $(RESET),--reset)
 
 api: ## Run the API with reload on :8000
 	$(BACKEND) uv run uvicorn ursache.api.main:create_app --factory --reload --port 8000

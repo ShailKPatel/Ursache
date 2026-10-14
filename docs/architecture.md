@@ -13,12 +13,13 @@
 | Ingestion       | `ursache/ingestion`         | Parses documents and images; writes Postgres rows and blobs                 |
 | Indexing        | `ursache/indexing`          | Builds Qdrant points from Postgres rows; manages collections and aliases    |
 | LLM layer       | `ursache/llm`               | `LLMClient` protocol, Gemini client, Postgres response cache, quota guard    |
-| Simulator       | `backend/simulator`         | Generates the plant and plants root causes (writes `plant` and `eval`)      |
+| Simulator       | `backend/simulator`         | Generates the plant, documents and planted causes (writes `plant`, `kb`, `eval`) |
 | Evals           | `backend/evals`             | Scores retrieval and RCA against the planted ground truth                   |
-| CLI             | `ursache` (Typer)           | `db-migrate`, `db-roles`, `db-seed`, `qdrant-bootstrap`, `health`            |
+| CLI             | `ursache` (Typer)           | `db-migrate`, `db-roles`, `db-seed`, `qdrant-bootstrap`, `simulate`, `health` |
 
-In Phase 1, only the API health endpoint, the CLI, the LLM layer, storage and the indexing
-bootstrap are implemented. The other packages are placeholders.
+Implemented so far: the API health endpoint, the CLI, the LLM layer, storage, the indexing
+bootstrap (Phase 1) and the simulator (Phase 2, see [simulator.md](simulator.md)). The other
+packages are placeholders.
 
 ## Data flow
 
@@ -86,6 +87,12 @@ The quota day follows Gemini's reset at midnight Pacific time.
   `default_transaction_read_only = on` set on the role.
 - The ground truth in `eval` is visible only to `ursache_eval`, which the evaluation
   harness uses. The agent and the API cannot read it, and integration tests enforce this.
+- The **simulator** connects with `MIGRATION_DATABASE_URL`, the owner role, because it
+  writes `plant`, `kb` and `eval` and no restricted role can write `eval` (`ursache_app`
+  cannot even read it). It runs from a workstation or CI, never inside the
+  API: `backend/simulator` is excluded from the Docker image, so the deployed service never
+  holds code that writes ground truth. Nothing it writes to `plant` or `kb` carries cause
+  labels or injection ids; those exist only in `eval`.
 - `plant.coil_process_summary` is a materialized view with one row per coil and the
   mean/min/max of each process parameter. The parameter list is one constant,
   `ursache.db.views.PROCESS_PARAMETERS`.

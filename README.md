@@ -7,8 +7,8 @@ process data, maintenance logs, inspection results, defect images and controlled
 hypotheses and supports each one with citations that the engineer can check. An engineer
 reviews the hypotheses before any report is written.
 
-> **Status:** Phase 1, the foundation. Configuration, database schema, infrastructure,
-> deploy configs and CI are in place. Retrieval, the agent and the plant simulator come in
+> **Status:** Phase 2. The foundation (configuration, database schema, infrastructure,
+> deploy configs, CI) and the plant simulator are in place. Retrieval and the agent come in
 > later phases.
 
 ## Why a simulated plant
@@ -19,6 +19,13 @@ descaler nozzle on one stand during a known time window. The planted causes are 
 truth for evaluation. They live in a separate `eval` schema that the agent's database role
 cannot read, so the system cannot cheat. The defect images are real: the public NEU-DET
 hot-rolled strip dataset ([ADR 0003](docs/adr/0003-simulated-plant-with-planted-root-causes.md)).
+
+The simulator (`backend/simulator`) is deterministic: a seed fixes every row and file. It
+models two hot-strip lines over 90 days (about 7,200 coils and 500,000 sensor readings),
+plants six causes covering the 6M categories, writes the incidents they produce as shift
+reports that never name the cause, and generates work instructions, SOPs, manual sections,
+supplier certificates and past 8D reports as Markdown. Details, effect sizes and the size
+estimate: [docs/simulator.md](docs/simulator.md).
 
 All data is synthetic or public. Nothing confidential leaves the machine. That is why the
 project can use free-tier hosted APIs for the LLM, embeddings and reranking.
@@ -70,6 +77,7 @@ cp .env.example .env           # defaults match docker-compose.yml
 make install                   # uv sync + pnpm install
 make up                        # Postgres 18 + Qdrant, waits until healthy
 make migrate roles seed bootstrap
+make simulate                  # plant data, documents, ground truth (~130 MB, ~50 s)
 make api                       # http://localhost:8000/health
 make web                       # http://localhost:3000 (second terminal)
 ```

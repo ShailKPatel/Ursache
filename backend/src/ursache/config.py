@@ -58,6 +58,9 @@ class Settings(BaseSettings):
     s3_secret: SecretStr | None = None
     s3_public_base_url: str | None = None
 
+    # Controlled documents written by the simulator and read by ingestion (relative to backend/)
+    generated_docs_dir: str = "../data/generated/docs"
+
     # Langfuse (OTLP over HTTP); tracing is disabled when keys are unset
     langfuse_otlp_endpoint: str = "https://cloud.langfuse.com/api/public/otel/v1/traces"
     langfuse_public_key: SecretStr | None = None
