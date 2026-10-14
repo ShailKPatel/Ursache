@@ -7,9 +7,9 @@ process data, maintenance logs, inspection results, defect images and controlled
 hypotheses and supports each one with citations that the engineer can check. An engineer
 reviews the hypotheses before any report is written.
 
-> **Status:** Phase 2. The foundation (configuration, database schema, infrastructure,
-> deploy configs, CI) and the plant simulator are in place. Retrieval and the agent come in
-> later phases.
+> **Status:** Phase 3 in progress. The foundation (configuration, database schema,
+> infrastructure, deploy configs, CI), the plant simulator and document chunking are in
+> place. Embeddings, retrieval and the agent come next.
 
 ## Why a simulated plant
 
@@ -26,6 +26,11 @@ plants six causes covering the 6M categories, writes the incidents they produce 
 reports that never name the cause, and generates work instructions, SOPs, manual sections,
 supplier certificates and past 8D reports as Markdown. Details, effect sizes and the size
 estimate: [docs/simulator.md](docs/simulator.md).
+
+Ingestion (`backend/src/ursache/ingestion`) splits those documents into chunks along their
+headings, never inside a table or a numbered step, and stores them in `kb.chunks` with a
+context header and filter metadata. Reruns skip unchanged documents. Rules and the token
+estimate: [docs/ingestion.md](docs/ingestion.md).
 
 All data is synthetic or public. Nothing confidential leaves the machine. That is why the
 project can use free-tier hosted APIs for the LLM, embeddings and reranking.
@@ -78,6 +83,7 @@ make install                   # uv sync + pnpm install
 make up                        # Postgres 18 + Qdrant, waits until healthy
 make migrate roles seed bootstrap
 make simulate                  # plant data, documents, ground truth (~130 MB, ~50 s)
+make ingest                    # chunk documents into kb.chunks
 make api                       # http://localhost:8000/health
 make web                       # http://localhost:3000 (second terminal)
 ```

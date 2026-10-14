@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import sys
+from dataclasses import asdict
 from pathlib import Path
 
 import typer
@@ -11,6 +12,7 @@ from ursache.api.health import health_service
 from ursache.config import get_settings
 from ursache.db import admin
 from ursache.indexing.qdrant_bootstrap import bootstrap
+from ursache.ingestion import IngestionError, ingest_documents
 from ursache.logging import configure_logging
 
 app = typer.Typer(help="Ursache operations CLI.", no_args_is_help=True)
@@ -88,6 +90,24 @@ def simulate(
         typer.echo(str(exc), err=True)
         raise typer.Exit(code=1) from None
     typer.echo(json.dumps({**summary.counts, "digest": summary.digest, "size_mb": summary.size_mb}))
+
+
+@app.command("ingest-docs")
+def ingest_docs(
+    force: bool = typer.Option(False, "--force", help="Rebuild chunks of unchanged documents."),
+) -> None:
+    """Chunk the documents in kb.documents into kb.chunks (writes kb as ursache_app)."""
+    settings = get_settings()
+    try:
+        summary = ingest_documents(
+            admin.libpq_url(settings.app_database_url),
+            Path(settings.generated_docs_dir),
+            force=force,
+        )
+    except IngestionError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(code=1) from None
+    typer.echo(json.dumps(asdict(summary)))
 
 
 @app.command()

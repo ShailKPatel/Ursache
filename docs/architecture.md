@@ -15,11 +15,11 @@
 | LLM layer       | `ursache/llm`               | `LLMClient` protocol, Gemini client, Postgres response cache, quota guard    |
 | Simulator       | `backend/simulator`         | Generates the plant, documents and planted causes (writes `plant`, `kb`, `eval`) |
 | Evals           | `backend/evals`             | Scores retrieval and RCA against the planted ground truth                   |
-| CLI             | `ursache` (Typer)           | `db-migrate`, `db-roles`, `db-seed`, `qdrant-bootstrap`, `simulate`, `health` |
+| CLI             | `ursache` (Typer)           | `db-migrate`, `db-roles`, `db-seed`, `qdrant-bootstrap`, `simulate`, `ingest-docs`, `health` |
 
 Implemented so far: the API health endpoint, the CLI, the LLM layer, storage, the indexing
-bootstrap (Phase 1) and the simulator (Phase 2, see [simulator.md](simulator.md)). The other
-packages are placeholders.
+bootstrap (Phase 1), the simulator (Phase 2, see [simulator.md](simulator.md)) and document
+chunking (Phase 3, see [ingestion.md](ingestion.md)). The other packages are placeholders.
 
 ## Data flow
 
@@ -93,6 +93,8 @@ The quota day follows Gemini's reset at midnight Pacific time.
   API: `backend/simulator` is excluded from the Docker image, so the deployed service never
   holds code that writes ground truth. Nothing it writes to `plant` or `kb` carries cause
   labels or injection ids; those exist only in `eval`.
+- **Ingestion** connects as `ursache_app` (`APP_DATABASE_URL`), not the owner: it only
+  writes `kb`, which that role may read and write ([ingestion.md](ingestion.md)).
 - `plant.coil_process_summary` is a materialized view with one row per coil and the
   mean/min/max of each process parameter. The parameter list is one constant,
   `ursache.db.views.PROCESS_PARAMETERS`.
