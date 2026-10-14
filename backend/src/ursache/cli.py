@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import asyncio
 import json
+import sys
+from pathlib import Path
 
 import typer
 
@@ -45,6 +47,47 @@ def qdrant_bootstrap() -> None:
     """Create Qdrant collections, payload indexes and aliases (idempotent)."""
     created = asyncio.run(bootstrap(get_settings()))
     typer.echo(f"created: {', '.join(created)}" if created else "collections already present")
+
+
+def _add_simulator_to_path() -> None:
+    # The simulator ships with the source tree, not with the installed package or the image.
+    backend_dir = Path(__file__).resolve().parents[2]
+    if (backend_dir / "simulator").is_dir() and str(backend_dir) not in sys.path:
+        sys.path.insert(0, str(backend_dir))
+
+
+@app.command()
+def simulate(
+    seed: int = typer.Option(42, help="Random seed; the same seed gives identical data."),
+    days: int = typer.Option(90, min=14, help="Simulated days."),
+    coils_per_day: int = typer.Option(40, min=4, max=400, help="Coils per line per day."),
+    samples_per_coil: int = typer.Option(3, min=1, max=20, help="Readings per sensor per coil."),
+    reset: bool = typer.Option(False, "--reset", help="Clear the simulator's tables first."),
+) -> None:
+    """Generate the simulated plant, documents and ground truth (writes plant, kb, eval)."""
+    _add_simulator_to_path()
+    try:
+        from simulator import SimConfig, SimulatorError
+        from simulator import simulate as run_simulation
+    except ModuleNotFoundError:
+        typer.echo("simulate needs a source checkout (backend/simulator)", err=True)
+        raise typer.Exit(code=2) from None
+
+    settings = get_settings()
+    cfg = SimConfig(
+        seed=seed, days=days, coils_per_day=coils_per_day, samples_per_coil=samples_per_coil
+    )
+    try:
+        summary = run_simulation(
+            cfg,
+            admin.libpq_url(settings.migration_database_url),
+            Path(settings.generated_docs_dir),
+            reset=reset,
+        )
+    except SimulatorError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(code=1) from None
+    typer.echo(json.dumps({**summary.counts, "digest": summary.digest, "size_mb": summary.size_mb}))
 
 
 @app.command()
